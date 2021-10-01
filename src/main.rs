@@ -1,6 +1,14 @@
 #![allow(non_snake_case)] // Deixar a gente não usar underline _
 
-pub fn lexer<'a>(expressao: String) -> Vec<String>{
+pub fn printTokens(items : Vec<String>){
+    print!("[");
+    for item in items{
+        print!("{} ", item);
+    }
+    print!("]");
+}
+
+pub fn lexer(expressao: &Box::<String>) -> Vec<String>{
     let simbolos_separados = expressao.chars(); // Vetor de caracteres que possui todos os símbolos de "expressao" separados
     let mut aux_retorno : Vec<char> = Vec::new(); // Vetor de caracteres que terá os valores de simbolos_separados diferentes de ' ' 
     let mut retorno : Vec<String> = Vec::new(); // Vetor de strings que será retornada
@@ -13,22 +21,21 @@ pub fn lexer<'a>(expressao: String) -> Vec<String>{
         }
     }
 
-    let buffer_de_simbolos : Vec<char> = Vec::new();
+    let mut buffer_de_simbolos : Vec<char> = Vec::new();
     //Precisamos juntar os números de aux_retorno
     for symbol in aux_retorno {
         //Se for um operando
         if (symbol == '*') || (symbol == '/') || (symbol == '+') || (symbol == '-') || (symbol == '(') || (symbol == ')') {
-            //Se buffer_de_simbolos tiver numeros dentro dele, então precisamos converter buffer_de_simbolos para String e esvaziá-lo
-            if buffer_de_simbolos.len() > 0{
-                //Converter buffer_de_simbolos e mandar para retorno
-                retorno.push(buffer_de_simbolos.into_iter().collect());
-                //Esvaziar buffer_de_simbolos
+            if !(&buffer_de_simbolos.is_empty()){
+                let buffer_aux : String = buffer_de_simbolos.iter().collect();
+                retorno.push(buffer_aux);
+                buffer_de_simbolos.clear();
             }
             
             buffer_de_simbolos.push(symbol);
-            //Converter buffer_de_simbolos Vec<char> para String e colocar em retorno e depois esvaziar buffer_de_símbolos
-            retorno.push(buffer_de_simbolos.into_iter().collect());
-            //Esvaziar buffer_de_simbolos
+            let buffer_aux : String = buffer_de_simbolos.iter().collect();
+            retorno.push(buffer_aux);
+            buffer_de_simbolos.clear();
         }
         //Se for um número
         else{
@@ -40,5 +47,7 @@ pub fn lexer<'a>(expressao: String) -> Vec<String>{
 }
 
 fn main() {
-    let expressaoMath = Box::new(String::from("31 * (4 + 10)"));    
+    let expressaoMath = Box::new(String::from("31 * (4 + -10)"));
+    assert_eq!(lexer(&expressaoMath), ["31", "*", "(", "4", "+", "-10", ")"]);
+    printTokens(lexer(&expressaoMath));
 }
