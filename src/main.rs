@@ -1,5 +1,72 @@
 #![allow(non_snake_case)] // Deixar a gente não usar underline _
 
+struct Stack{
+    elem : Vec<String>,
+    top : i32,
+}
+
+struct Queue{
+    elem : Vec<String>,
+    begin : i32, 
+    end : i32,
+}
+
+impl Stack{
+    //Iniciação da Pilha
+    pub fn new() -> Stack{
+        Stack { elem : Vec::new() ,
+                top : -1}
+    }
+
+    //Retorna se a pilha está vazia ou não
+    pub fn isEmpty(&mut self) -> bool{
+        self.elem.len() == 0
+    }
+
+    //Função para empilhar um item na pilha
+    pub fn push(&mut self, item : String){
+        self.top += 1;
+        self.elem.push(item);
+    }
+
+    //Função que desempilha o item que está no topo da pilha
+    pub fn pop(&mut self){
+        self.top -= 1;
+        self.elem.pop();
+    }
+}
+
+impl Queue{
+    //Função que inicializa a Fila
+    pub fn new(&mut self){
+        self.elem = Vec::new();
+        self.begin = -1;
+        self.end = -1;
+    }
+
+    //Retorna se a Fila está vazia ou não
+    pub fn isEmpty(&mut self) -> bool{
+        self.begin == self.end
+    }
+
+    //Função que insere um item na Fila
+    pub fn push(&mut self, item : String){
+        self.end += 1;
+        self.elem.push(item);
+    }
+
+    //Função que remove um item da Fila
+    pub fn pop(&mut self){
+        if !self.isEmpty() { 
+            self.begin += 1;
+            //Se a fila ficar vazia, então inicializamos ela novamente
+            if self.isEmpty() {
+                self.new()
+            }
+        }
+    }
+}
+
 pub fn printTokens(items : Vec<String>){
     print!("[ ");
     for item in items{
@@ -114,10 +181,9 @@ pub fn lexer(expressao: &Box::<String>) -> Vec<String>{
     return retorno;
 }
 
-
 fn main() {
-    let expressaoMath = Box::new(String::from("-7 - -37 * (90 + 70) - 30 - -44 + -32 - 56 - -48 - -78"));
-    printTokens(lexer(&expressaoMath));
+    //let expressaoMath = Box::new(String::from("-7 - -37 * (90 + 70) - 30 - -44 + -32 - 56 - -48 - -78"));
+    //printTokens(lexer(&expressaoMath));
 }
 
 //Na linha de comando digite "cargo test" para realizar os testes do lexer_Tests()
@@ -171,4 +237,5 @@ fn lexer_Tests() {
     assert_eq!(lexer(&expressaoMath), ["(", "2", "-", "65", "-", "(", "-24", "+", "-97", ")", "*", "-5", "*", "-61", ")", "*", "(", "-41", "+", "85", "*", "9", "*", "-92", "*", "(", "75", "-", "18", ")", ")"]);
     expressaoMath = Box::new(String::from("-20 + -51 + 20 + -68 * -11 + -35 * -14 - 95 - 32 + -52 * -23 - -90 * -42"));
     assert_eq!(lexer(&expressaoMath), ["-20", "+", "-51", "+", "20", "+", "-68", "*", "-11", "+", "-35", "*", "-14", "-", "95", "-", "32", "+", "-52", "*", "-23", "-", "-90", "*", "-42"]);
+    println!("Testes da função lexer concluídos!");
 }
