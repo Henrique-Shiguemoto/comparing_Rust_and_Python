@@ -1,5 +1,37 @@
 #![allow(non_snake_case)] // Deixar a gente não usar underline _
 
+//Struct que representará cada token
+struct Node {
+    leftChild : Box::<Node>,
+    rightChild : Box::<Node>,
+    value : String,
+}
+
+//Struct que representa a árvore binária
+struct Btree {
+    root : Node,
+}
+
+//Construtor para cada nó
+impl Node{
+    pub fn new(leftChild : Box::<Node>, rightChild : Box::<Node>, value : String) -> Node{
+        Node{
+            leftChild,
+            rightChild,
+            value
+        }
+    } 
+}
+
+//Construtor da árvore binária
+impl Btree{
+    pub fn new(root : Node) -> Btree{
+        Btree{
+            root,
+        }
+    }
+}
+
 pub fn printTokens(items : Vec<String>){
     print!("[ ");
     for item in items{
@@ -114,10 +146,9 @@ pub fn lexer(expressao: &Box::<String>) -> Vec<String>{
     return retorno;
 }
 
-
 fn main() {
-    let expressaoMath = Box::new(String::from("-7 - -37 * (90 + 70) - 30 - -44 + -32 - 56 - -48 - -78"));
-    printTokens(lexer(&expressaoMath));
+    //let expressaoMath = Box::new(String::from("-7 - -37 * (90 + 70) - 30 - -44 + -32 - 56 - -48 - -78"));
+    //printTokens(lexer(&expressaoMath));
 }
 
 //Na linha de comando digite "cargo test" para realizar os testes do lexer_Tests()
@@ -171,4 +202,5 @@ fn lexer_Tests() {
     assert_eq!(lexer(&expressaoMath), ["(", "2", "-", "65", "-", "(", "-24", "+", "-97", ")", "*", "-5", "*", "-61", ")", "*", "(", "-41", "+", "85", "*", "9", "*", "-92", "*", "(", "75", "-", "18", ")", ")"]);
     expressaoMath = Box::new(String::from("-20 + -51 + 20 + -68 * -11 + -35 * -14 - 95 - 32 + -52 * -23 - -90 * -42"));
     assert_eq!(lexer(&expressaoMath), ["-20", "+", "-51", "+", "20", "+", "-68", "*", "-11", "+", "-35", "*", "-14", "-", "95", "-", "32", "+", "-52", "*", "-23", "-", "-90", "*", "-42"]);
+    println!("Testes da função lexer concluídos!");
 }
