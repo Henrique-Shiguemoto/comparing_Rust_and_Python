@@ -1,5 +1,9 @@
 #![allow(non_snake_case)] // Deixar a gente não usar underline _
 
+use std::collections::HashMap;
+
+
+
 struct Stack{
     elem : Vec<String>
 }
@@ -28,6 +32,12 @@ impl Stack{
     pub fn pop(&mut self) -> String{
         self.elem.pop().unwrap()
     }
+
+    //Função para devolver o último elemento de elem
+    // pub fn topo(&mut self) -> String{
+    //     let topo : String = self.elem[self.elem.len() - 1];
+    //     topo
+    // }
 }
 
 impl Queue{
@@ -168,12 +178,82 @@ pub fn lexer(expressao: &Box::<String>) -> Vec<String>{
     return retorno;
 }
 
-fn main() {
+// 1.  While there are tokens to be read:
+// 2.        Read a token
+// 3.        If it's a number add it to queue
+// 4.        If it's an operator
+// 5.               While there's an operator on the top of the stack with greater precedence:
+// 6.                       Pop operators from the stack onto the output queue
+// 7.               Push the current operator onto the stack
+// 8.        If it's a left bracket push it onto the stack
+// 9.        If it's a right bracket 
+// 10.            While there's not a left bracket at the top of the stack:
+// 11.                     Pop operators from the stack onto the output queue.
+// 12.             Pop the left bracket from the stack and discard it
+// 13. While there are operators on the stack, pop them to the queue
+
+pub fn shunting_yard(tokens: Box<Vec<String>>, precedencia_operandos : HashMap<String, u8>){
+    let mut pilha_operadores : Stack = Stack::new();
+    let mut fila_saida : Queue = Queue::new(); 
+    
+    let mut i = 0;
+    let mut tamanho_tokens = tokens.len();
+    while tamanho_tokens > 0 {
+        let mut token: String = (*tokens[i]).to_string(); //Leitura de um token
+
+        //Verificando se token é um número
+        if (token != "+") && (token != "-") && (token != "*") && (token != "/") && (token != "(") && (token != ")"){
+            fila_saida.push(token);
+        }
+        //Verificando se token é um operador
+        else if (token == "+") || (token == "-") || (token == "*") || (token == "/"){
+            let precedencia_token = precedencia_operandos[&token]; // Lendo a precedência do token atual
+            let mut precedencia_topo_da_pilha = precedencia_operandos[&pilha_operadores.elem[pilha_operadores.elem.len() - 1]]; // Lendo a precedência do token do topo da pilha
+            while precedencia_topo_da_pilha > precedencia_token {
+                let operador_removido_pilha = pilha_operadores.pop();
+                fila_saida.push(operador_removido_pilha);
+                precedencia_topo_da_pilha = precedencia_operandos[&pilha_operadores.elem[pilha_operadores.elem.len() - 1]];
+            }
+            pilha_operadores.push(token);
+        }
+        //Verificando se token é "(" (abre parênteses)
+        else if token == "(" {
+            pilha_operadores.push(token);
+        }
+        //Verificando se token é ")" (fecha parênteses)
+        else{
+            let topo_da_pilha : String = pilha_operadores.elem[pilha_operadores.elem.len() - 1].to_string();
+            while topo_da_pilha != "(" {
+                let operador_removido_pilha = pilha_operadores.pop();
+                fila_saida.push(operador_removido_pilha);
+            }
+            pilha_operadores.pop();
+        }
+
+        i += 1;
+        tamanho_tokens -= 1;
+    }
+
+    let mut tamanho_pilha_operadores = pilha_operadores.elem.len();
+    while tamanho_pilha_operadores > 0{
+        let operador_removido_pilha = pilha_operadores.pop();
+        fila_saida.push(operador_removido_pilha);
+        tamanho_pilha_operadores -= 1;
+    }
 }
 
-//Na linha de comando digite "cargo test" para realizar os testes do lexer_Tests()
+fn main() {
+    //Definindo a precedência de operadores
+    let mut precedencia_operadores: HashMap<String, u8> = HashMap::new();
+    precedencia_operadores.insert("*".to_string(), 1);
+    precedencia_operadores.insert("/".to_string(), 2);
+    precedencia_operadores.insert("+".to_string(), 3);
+    precedencia_operadores.insert("-".to_string(), 4);
+}
+
+//Na linha de comando digite "cargo test" para realizar os testes do lexer_test()
 #[test]
-fn lexer_Tests() {
+fn lexer_test() {
     let mut expressaoMath = Box::new(String::from("1 + 3"));
     assert_eq!(lexer(&expressaoMath), ["1", "+", "3"]);
     expressaoMath = Box::new(String::from("1 + 2 * 3"));
@@ -234,7 +314,7 @@ fn stack_queue_test() {
     let mut pilha : Stack = Stack::new();
     
     assert_eq!(pilha.isEmpty(), true);
-    assert_eq!(pilha.elem, a);
+    assert_eq!(pilha.elem, a); //Verificando se o vetor elem está de fato vazio
 
     //Inserindo algumas strings na pilha
     pilha.push(test_string_stack);
@@ -247,20 +327,20 @@ fn stack_queue_test() {
 
     //Removendo elementos da pilha
     let mut string_removida = pilha.pop();
-    assert_eq!(pilha.elem, ["10", "2"]);
     assert_eq!(string_removida, "49");
+    assert_eq!(pilha.elem, ["10", "2"]);
     string_removida = pilha.pop();
     assert_eq!(string_removida, "2");
     string_removida = pilha.pop();
-    assert_eq!(pilha.elem, a);
-    assert_eq!(pilha.isEmpty(), true);
     assert_eq!(string_removida, "10");
+    assert_eq!(pilha.elem, a); //Verificando se o vetor elem está de fato vazio
+    assert_eq!(pilha.isEmpty(), true);
 
     //Testes com a struct Queue (Fila)
     let mut test_string_queue : String = String::from("10");
     let mut fila : Queue = Queue::new();
     
-    assert_eq!(fila.elem, a);
+    assert_eq!(fila.elem, a); //Verificando se o vetor elem está de fato vazio
     assert_eq!(fila.isEmpty(), true);
 
     //Inserindo elementos na Fila
@@ -283,6 +363,6 @@ fn stack_queue_test() {
     assert_eq!(fila.elem, ["8"]);
     string_removida = fila.pop();
     assert_eq!(string_removida, "8");
-    assert_eq!(fila.elem, a);
+    assert_eq!(fila.elem, a); //Verificando se o vetor elem está de fato vazio
     assert_eq!(fila.isEmpty(), true);
 }
