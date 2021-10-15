@@ -1,21 +1,17 @@
 #![allow(non_snake_case)] // Deixar a gente não usar underline _
 
 struct Stack{
-    elem : Vec<String>,
-    top : i32,
+    elem : Vec<String>
 }
 
 struct Queue{
-    elem : Vec<String>,
-    begin : i32, 
-    end : i32,
+    elem : Vec<String>
 }
 
 impl Stack{
     //Iniciação da Pilha
     pub fn new() -> Stack{
-        Stack { elem : Vec::new() ,
-                top : -1}
+        Stack { elem : Vec::new() }
     }
 
     //Retorna se a pilha está vazia ou não
@@ -25,45 +21,36 @@ impl Stack{
 
     //Função para empilhar um item na pilha
     pub fn push(&mut self, item : String){
-        self.top += 1;
         self.elem.push(item);
     }
 
     //Função que desempilha o item que está no topo da pilha
-    pub fn pop(&mut self){
-        self.top -= 1;
-        self.elem.pop();
+    pub fn pop(&mut self) -> String{
+        self.elem.pop().unwrap()
     }
 }
 
 impl Queue{
     //Função que inicializa a Fila
-    pub fn new(&mut self){
-        self.elem = Vec::new();
-        self.begin = -1;
-        self.end = -1;
+    pub fn new() -> Queue{
+        Queue {
+            elem : Vec::new()           
+        }
     }
 
     //Retorna se a Fila está vazia ou não
     pub fn isEmpty(&mut self) -> bool{
-        self.begin == self.end
+        self.elem.len() == 0
     }
 
     //Função que insere um item na Fila
     pub fn push(&mut self, item : String){
-        self.end += 1;
         self.elem.push(item);
     }
 
     //Função que remove um item da Fila
-    pub fn pop(&mut self){
-        if !self.isEmpty() { 
-            self.begin += 1;
-            //Se a fila ficar vazia, então inicializamos ela novamente
-            if self.isEmpty() {
-                self.new()
-            }
-        }
+    pub fn pop(&mut self) -> String{
+        self.elem.remove(0)
     }
 }
 
@@ -182,8 +169,6 @@ pub fn lexer(expressao: &Box::<String>) -> Vec<String>{
 }
 
 fn main() {
-    //let expressaoMath = Box::new(String::from("-7 - -37 * (90 + 70) - 30 - -44 + -32 - 56 - -48 - -78"));
-    //printTokens(lexer(&expressaoMath));
 }
 
 //Na linha de comando digite "cargo test" para realizar os testes do lexer_Tests()
@@ -238,4 +223,66 @@ fn lexer_Tests() {
     expressaoMath = Box::new(String::from("-20 + -51 + 20 + -68 * -11 + -35 * -14 - 95 - 32 + -52 * -23 - -90 * -42"));
     assert_eq!(lexer(&expressaoMath), ["-20", "+", "-51", "+", "20", "+", "-68", "*", "-11", "+", "-35", "*", "-14", "-", "95", "-", "32", "+", "-52", "*", "-23", "-", "-90", "*", "-42"]);
     println!("Testes da função lexer concluídos!");
+}
+
+#[test]
+fn stack_queue_test() {
+    let a : Vec<String> = Vec::new(); //Vetor de Strings vazia para teste
+
+    //Testes com a struct Stack (Pilha)
+    let mut test_string_stack : String = String::from("10");
+    let mut pilha : Stack = Stack::new();
+    
+    assert_eq!(pilha.isEmpty(), true);
+    assert_eq!(pilha.elem, a);
+
+    //Inserindo algumas strings na pilha
+    pilha.push(test_string_stack);
+    test_string_stack = String::from("2");
+    pilha.push(test_string_stack);
+    test_string_stack = String::from("49");
+    pilha.push(test_string_stack);
+    assert_eq!(pilha.elem, ["10", "2", "49"]);
+    assert_eq!(pilha.isEmpty(), false);
+
+    //Removendo elementos da pilha
+    let mut string_removida = pilha.pop();
+    assert_eq!(pilha.elem, ["10", "2"]);
+    assert_eq!(string_removida, "49");
+    string_removida = pilha.pop();
+    assert_eq!(string_removida, "2");
+    string_removida = pilha.pop();
+    assert_eq!(pilha.elem, a);
+    assert_eq!(pilha.isEmpty(), true);
+    assert_eq!(string_removida, "10");
+
+    //Testes com a struct Queue (Fila)
+    let mut test_string_queue : String = String::from("10");
+    let mut fila : Queue = Queue::new();
+    
+    assert_eq!(fila.elem, a);
+    assert_eq!(fila.isEmpty(), true);
+
+    //Inserindo elementos na Fila
+    fila.push(test_string_queue);
+    assert_eq!(fila.elem, ["10"]);
+    test_string_queue = String::from("9");
+    fila.push(test_string_queue);
+    assert_eq!(fila.elem, ["10", "9"]);
+    test_string_queue = String::from("8");
+    fila.push(test_string_queue);
+    assert_eq!(fila.elem, ["10", "9", "8"]);
+    assert_eq!(fila.isEmpty(), false);
+
+    //Removendo elementos da Fila
+    let mut string_removida = fila.pop();
+    assert_eq!(string_removida, "10");
+    assert_eq!(fila.elem, ["9", "8"]);
+    string_removida = fila.pop();
+    assert_eq!(string_removida, "9");
+    assert_eq!(fila.elem, ["8"]);
+    string_removida = fila.pop();
+    assert_eq!(string_removida, "8");
+    assert_eq!(fila.elem, a);
+    assert_eq!(fila.isEmpty(), true);
 }
