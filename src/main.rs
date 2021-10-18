@@ -1,6 +1,5 @@
 //Remoção de warnings
-#![allow(non_snake_case)] // Deixar a gente não usar underline _
-#![warn(dead_code)] // Não mostrar warnings relacionados a código não usados
+#![allow(warnings)]
 
 //imports
 use std::collections::HashMap;
@@ -36,12 +35,6 @@ impl Stack{
     pub fn pop(&mut self) -> String{
         self.elem.pop().unwrap()
     }
-
-    //Função para devolver o último elemento de elem
-    // pub fn topo(&mut self) -> String{
-    //     let topo : String = self.elem[self.elem.len() - 1];
-    //     topo
-    // }
 }
 
 impl Queue{
@@ -197,7 +190,6 @@ pub fn shunting_yard(tokens: Box<Vec<String>>, precedencia_operadores : &Box<Has
         }
         //Verificando se token é um operador
         else if (token == "+") || (token == "-") || (token == "*") || (token == "/"){
-            //PARA RESOLVER: ESTAMOS TENTANDO ACESSAR A PILHA MESMO QUANDO ELA ESTÁ VAZIA
             if pilha_operadores.elem.len() > 0{
                 let precedencia_token = precedencia_operadores[&token]; // Lendo a precedência do token atual
                 let mut precedencia_topo_da_pilha = precedencia_operadores[&pilha_operadores.elem[pilha_operadores.elem.len() - 1]]; // Lendo a precedência do token do topo da pilha
@@ -244,7 +236,58 @@ pub fn shunting_yard(tokens: Box<Vec<String>>, precedencia_operadores : &Box<Has
     return fila_saida;
 }
 
+pub fn solve(fila_saida : &Box<Queue>) -> i64{
+    let resultado : i64;
+    //Função que resolve expressões em Notação Reverse Polish
+    let mut pilha_operandos : Stack = Stack::new(); //Colocaremos os operandos nessa pilha
+
+    //["1", "2", "3", "*", "+"]
+    for token in &fila_saida.elem{
+        //Se token for número ou operando
+        if (token != "+") && (token != "-") && (token != "*") && (token != "/"){
+            pilha_operandos.push(token.to_string());
+        }
+        //Se token for operador
+        else{
+            //Converter Strings para inteiros
+            let op1 : i64 = pilha_operandos.pop().parse().unwrap(); 
+            let op2 : i64 = pilha_operandos.pop().parse().unwrap();
+            let resultado_operacao;
+            
+            match token.as_str(){
+                "+" => resultado_operacao = op1 + op2,
+                "-" => resultado_operacao = op1 - op2,
+                "*" => resultado_operacao = op1 * op2,
+                "/" => {if op2 == 0{
+                            panic!("Divisor não pode ser 0!");
+                        }
+                            resultado_operacao = op1 / op2
+                        }
+                _ => {}
+            }
+                pilha_operandos.push(resultado_operacao.to_string());
+            }
+            
+        }
+    }
+
+    resultado = pilha_operandos.pop().parse().unwrap();
+    return resultado;
+}
+
 fn main() {
+    //Definindo uma precedência de operadores
+    let mut precedencia: Box<HashMap<String, u8>> = Box::new(HashMap::new());
+    precedencia.insert("*".to_string(), 1);
+    precedencia.insert("/".to_string(), 1);
+    precedencia.insert("+".to_string(), 2);
+    precedencia.insert("-".to_string(), 2);
+    precedencia.insert("(".to_string(), PRECEDENCIA_MAX);
+    precedencia.insert(")".to_string(), PRECEDENCIA_MAX);
+
+    let mut expressaoMath : Box<String> = Box::new(String::from("1 - 1"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), 0);
 }
 
 #[test]
@@ -491,4 +534,116 @@ fn shunting_yard_test(){
     lexer_saida = Box::new(lexer(&expressao));
     let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
     assert_eq!(fila_saida.elem, ["-20", "-51", "+", "20", "+", "-68", "-11", "*", "+", "-35", "-14", "*", "+", "95", "-", "32", "-", "-52", "-23", "*", "+", "-90", "-42", "*", "-"]);
+}
+
+#[test]
+fn solve_test(){
+    //Definindo uma precedência de operadores
+    let mut precedencia: Box<HashMap<String, u8>> = Box::new(HashMap::new());
+    precedencia.insert("*".to_string(), 1);
+    precedencia.insert("/".to_string(), 1);
+    precedencia.insert("+".to_string(), 2);
+    precedencia.insert("-".to_string(), 2);
+    precedencia.insert("(".to_string(), PRECEDENCIA_MAX);
+    precedencia.insert(")".to_string(), PRECEDENCIA_MAX);
+
+    let mut expressaoMath : Box<String> = Box::new(String::from("1 + 3"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), 4);
+
+    expressaoMath = Box::new(String::from("1 + 2 * 3"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), 7);
+
+    expressaoMath = Box::new(String::from("4 / 2 + 7"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), 9);
+
+    expressaoMath = Box::new(String::from("1 + 2 + 3 * 4"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), 15);
+
+    expressaoMath= Box::new(String::from("(1 + 2 + 3) * 4"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), 24);
+
+    expressaoMath= Box::new(String::from("(10 / 3 + 23) * (1 - 4)"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), -78);
+
+    expressaoMath= Box::new(String::from("((1 + 3) * 8 + 1) / 3"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), 11);
+
+    expressaoMath= Box::new(String::from("58 - -8 * (58 + 31) - -14"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), 784);
+
+    expressaoMath= Box::new(String::from("-71 * (-76 * 91 * (10 - 5 - -82) - -79)"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), 42714523);
+
+    expressaoMath= Box::new(String::from("10 * 20 + 3 * 7 + 2 * 3 + 10 / 3 * 4"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), 239);
+
+    expressaoMath= Box::new(String::from("(-13 - -73) * (44 - -78 - 77 + 42 - -32)"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), 7140);
+
+    expressaoMath= Box::new(String::from("-29 * 49 + 47 - 29 + 74 - -85 - -27 + 4 - 28"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), -1241);
+
+    expressaoMath= Box::new(String::from("-74 - -14 + 42 - -4 + -78 + -50 * -35 * -81 + -41"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), -141883);
+
+    expressaoMath= Box::new(String::from("80 * -18 * (85 * (-46 + -71) - 12 + 26 - 59) + 84"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), 14385684);
+
+    expressaoMath= Box::new(String::from("25 + 38 + 88 + (-6 - -73) * (-83 + (53 + 97) * 14)"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), 135290);
+
+    expressaoMath= Box::new(String::from("(84 - 90) * (-8 - 75 + -83 * (56 - -77) + 4 + -94)"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), 67272);
+
+    expressaoMath= Box::new(String::from("(54 - -8 - -35 + -68 - -90) * -39 + -43 + -91 * -30"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), -1954);
+
+    expressaoMath= Box::new(String::from("-13 - -74 + (66 + -57) * -93 * -9 * 77 + 79 - 66 + -53"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), 580062);
+
+    expressaoMath= Box::new(String::from("(-72 - 50 * -74 + -45) * 92 * 21 * 5 * (-13 - 66 - 18)"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), -3357342660);
+
+    expressaoMath= Box::new(String::from("-7 - -37 * (90 + 70) - 30 - -44 + -32 - 56 - -48 - -78"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), 5965);
+
+    expressaoMath= Box::new(String::from("65 * -83 - -3 + -20 + 24 - 85 * (-24 + -32) * (61 - 20)"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), 189772);
+
+    expressaoMath= Box::new(String::from("55 * 48 * -44 - -32 + 1 * -80 * -94 - 74 * -53 + -30 + -61"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), -104777);
+
+    expressaoMath= Box::new(String::from("-82 * (25 + 62 + 3) - -72 + -65 * -32 * (77 + 12) - -95 + 51"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), 177958);
+
+    expressaoMath= Box::new(String::from("(2 - 65 - (-24 + -97) * -5 * -61) * (-41 + 85 * 9 * -92 * (75 - 18))"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), -147799088242);
+
+    expressaoMath= Box::new(String::from("-20 + -51 + 20 + -68 * -11 + -35 * -14 - 95 - 32 + -52 * -23 - -90 * -42"));
+    let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), -1524);
 }
