@@ -1,14 +1,18 @@
+//Remoção de warnings
 #![allow(non_snake_case)] // Deixar a gente não usar underline _
+#![warn(dead_code)] // Não mostrar warnings relacionados a código não usados
 
+//imports
 use std::collections::HashMap;
 
+//constantes
+const PRECEDENCIA_MAX: u8 = 100;
 
-
-struct Stack{
+pub struct Stack{
     elem : Vec<String>
 }
 
-struct Queue{
+pub struct Queue{
     elem : Vec<String>
 }
 
@@ -178,28 +182,14 @@ pub fn lexer(expressao: &Box::<String>) -> Vec<String>{
     return retorno;
 }
 
-// 1.  While there are tokens to be read:
-// 2.        Read a token
-// 3.        If it's a number add it to queue
-// 4.        If it's an operator
-// 5.               While there's an operator on the top of the stack with greater precedence:
-// 6.                       Pop operators from the stack onto the output queue
-// 7.               Push the current operator onto the stack
-// 8.        If it's a left bracket push it onto the stack
-// 9.        If it's a right bracket 
-// 10.            While there's not a left bracket at the top of the stack:
-// 11.                     Pop operators from the stack onto the output queue.
-// 12.             Pop the left bracket from the stack and discard it
-// 13. While there are operators on the stack, pop them to the queue
-
-pub fn shunting_yard(tokens: Box<Vec<String>>, precedencia_operandos : HashMap<String, u8>){
+pub fn shunting_yard(tokens: Box<Vec<String>>, precedencia_operadores : &Box<HashMap<String, u8>>) -> Queue{
     let mut pilha_operadores : Stack = Stack::new();
     let mut fila_saida : Queue = Queue::new(); 
     
     let mut i = 0;
     let mut tamanho_tokens = tokens.len();
     while tamanho_tokens > 0 {
-        let mut token: String = (*tokens[i]).to_string(); //Leitura de um token
+        let token: String = (*tokens[i]).to_string(); //Leitura de um token
 
         //Verificando se token é um número
         if (token != "+") && (token != "-") && (token != "*") && (token != "/") && (token != "(") && (token != ")"){
@@ -207,14 +197,23 @@ pub fn shunting_yard(tokens: Box<Vec<String>>, precedencia_operandos : HashMap<S
         }
         //Verificando se token é um operador
         else if (token == "+") || (token == "-") || (token == "*") || (token == "/"){
-            let precedencia_token = precedencia_operandos[&token]; // Lendo a precedência do token atual
-            let mut precedencia_topo_da_pilha = precedencia_operandos[&pilha_operadores.elem[pilha_operadores.elem.len() - 1]]; // Lendo a precedência do token do topo da pilha
-            while precedencia_topo_da_pilha > precedencia_token {
-                let operador_removido_pilha = pilha_operadores.pop();
-                fila_saida.push(operador_removido_pilha);
-                precedencia_topo_da_pilha = precedencia_operandos[&pilha_operadores.elem[pilha_operadores.elem.len() - 1]];
-            }
-            pilha_operadores.push(token);
+            //PARA RESOLVER: ESTAMOS TENTANDO ACESSAR A PILHA MESMO QUANDO ELA ESTÁ VAZIA
+            if pilha_operadores.elem.len() > 0{
+                let precedencia_token = precedencia_operadores[&token]; // Lendo a precedência do token atual
+                let mut precedencia_topo_da_pilha = precedencia_operadores[&pilha_operadores.elem[pilha_operadores.elem.len() - 1]]; // Lendo a precedência do token do topo da pilha
+                while precedencia_topo_da_pilha <= precedencia_token {
+                    let operador_removido_pilha = pilha_operadores.pop();
+                    fila_saida.push(operador_removido_pilha);
+                    if pilha_operadores.elem.len() > 0{
+                        precedencia_topo_da_pilha = precedencia_operadores[&pilha_operadores.elem[pilha_operadores.elem.len() - 1]];
+                    }else{
+                        precedencia_topo_da_pilha = PRECEDENCIA_MAX;
+                    }
+                }
+                pilha_operadores.push(token);
+            }else{
+                pilha_operadores.push(token);
+            }            
         }
         //Verificando se token é "(" (abre parênteses)
         else if token == "(" {
@@ -222,10 +221,11 @@ pub fn shunting_yard(tokens: Box<Vec<String>>, precedencia_operandos : HashMap<S
         }
         //Verificando se token é ")" (fecha parênteses)
         else{
-            let topo_da_pilha : String = pilha_operadores.elem[pilha_operadores.elem.len() - 1].to_string();
+            let mut topo_da_pilha : String = pilha_operadores.elem[pilha_operadores.elem.len() - 1].to_string();
             while topo_da_pilha != "(" {
                 let operador_removido_pilha = pilha_operadores.pop();
                 fila_saida.push(operador_removido_pilha);
+                topo_da_pilha  = pilha_operadores.elem[pilha_operadores.elem.len() - 1].to_string();
             }
             pilha_operadores.pop();
         }
@@ -240,18 +240,13 @@ pub fn shunting_yard(tokens: Box<Vec<String>>, precedencia_operandos : HashMap<S
         fila_saida.push(operador_removido_pilha);
         tamanho_pilha_operadores -= 1;
     }
+
+    return fila_saida;
 }
 
 fn main() {
-    //Definindo a precedência de operadores
-    let mut precedencia_operadores: HashMap<String, u8> = HashMap::new();
-    precedencia_operadores.insert("*".to_string(), 1);
-    precedencia_operadores.insert("/".to_string(), 2);
-    precedencia_operadores.insert("+".to_string(), 3);
-    precedencia_operadores.insert("-".to_string(), 4);
 }
 
-//Na linha de comando digite "cargo test" para realizar os testes do lexer_test()
 #[test]
 fn lexer_test() {
     let mut expressaoMath = Box::new(String::from("1 + 3"));
@@ -302,7 +297,6 @@ fn lexer_test() {
     assert_eq!(lexer(&expressaoMath), ["(", "2", "-", "65", "-", "(", "-24", "+", "-97", ")", "*", "-5", "*", "-61", ")", "*", "(", "-41", "+", "85", "*", "9", "*", "-92", "*", "(", "75", "-", "18", ")", ")"]);
     expressaoMath = Box::new(String::from("-20 + -51 + 20 + -68 * -11 + -35 * -14 - 95 - 32 + -52 * -23 - -90 * -42"));
     assert_eq!(lexer(&expressaoMath), ["-20", "+", "-51", "+", "20", "+", "-68", "*", "-11", "+", "-35", "*", "-14", "-", "95", "-", "32", "+", "-52", "*", "-23", "-", "-90", "*", "-42"]);
-    println!("Testes da função lexer concluídos!");
 }
 
 #[test]
@@ -365,4 +359,136 @@ fn stack_queue_test() {
     assert_eq!(string_removida, "8");
     assert_eq!(fila.elem, a); //Verificando se o vetor elem está de fato vazio
     assert_eq!(fila.isEmpty(), true);
+}
+
+#[test]
+fn shunting_yard_test(){
+    //Definindo uma precedência de operadores
+    let mut precedencia: Box<HashMap<String, u8>> = Box::new(HashMap::new());
+    precedencia.insert("*".to_string(), 1);
+    precedencia.insert("/".to_string(), 1);
+    precedencia.insert("+".to_string(), 2);
+    precedencia.insert("-".to_string(), 2);
+    precedencia.insert("(".to_string(), PRECEDENCIA_MAX);
+    precedencia.insert(")".to_string(), PRECEDENCIA_MAX);
+
+    let mut expressao = Box::new(String::from("1 + 3")); //Definição da expressão matemmática
+    let mut lexer_saida = Box::new(lexer(&expressao)); //Transformando a expressão matemática numa lista de tokens
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia); //Recebendo o resultado de shunting yard com a lista de tokens
+    assert_eq!(fila_saida.elem, ["1", "3", "+"]); //Teste da fila de saída do shunting yard
+
+    expressao = Box::new(String::from("1 + 2 * 3"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["1", "2", "3", "*", "+"]);
+
+    expressao = Box::new(String::from("4 / 2 + 7"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["4", "2", "/", "7", "+"]);
+
+    expressao = Box::new(String::from("1 + 2 + 3 * 4"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["1", "2", "+", "3", "4", "*", "+"]);
+
+    expressao = Box::new(String::from("(1 + 2 + 3) * 4"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["1", "2", "+", "3", "+", "4", "*"]);
+
+    expressao = Box::new(String::from("(10 / 3 + 23) * (1 - 4)"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["10", "3", "/", "23", "+", "1", "4", "-", "*"]);
+
+    expressao = Box::new(String::from("((1 + 3) * 8 + 1) / 3"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["1", "3", "+", "8", "*", "1", "+", "3", "/"]);
+
+    expressao = Box::new(String::from("58 - -8 * (58 + 31) - -14"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["58", "-8", "58", "31", "+", "*", "-", "-14", "-"]);
+
+    expressao = Box::new(String::from("-71 * (-76 * 91 * (10 - 5 - -82) - -79)"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["-71", "-76", "91", "*", "10", "5", "-", "-82", "-", "*", "-79", "-", "*"]);
+
+    expressao = Box::new(String::from("10 * 20 + 3 * 7 + 2 * 3 + 10 / 3 * 4"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["10", "20", "*", "3", "7", "*", "+", "2", "3", "*", "+", "10", "3", "/", "4", "*", "+"]);
+
+    expressao = Box::new(String::from("(-13 - -73) * (44 - -78 - 77 + 42 - -32)"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["-13", "-73", "-", "44", "-78", "-", "77", "-", "42", "+", "-32", "-", "*"]);
+
+    expressao = Box::new(String::from("-29 * 49 + 47 - 29 + 74 - -85 - -27 + 4 - 28"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["-29", "49", "*", "47", "+", "29", "-", "74", "+", "-85", "-", "-27", "-", "4", "+", "28", "-"]);
+
+    expressao = Box::new(String::from("-74 - -14 + 42 - -4 + -78 + -50 * -35 * -81 + -41"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["-74", "-14", "-", "42", "+", "-4", "-", "-78", "+", "-50", "-35", "*", "-81", "*", "+", "-41", "+",]);
+
+    expressao = Box::new(String::from("25 + 38 + 88 + (-6 - -73) * (-83 + (53 + 97) * 14)"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["25", "38", "+", "88", "+", "-6", "-73", "-", "-83", "53", "97", "+", "14", "*", "+", "*", "+"]);
+
+    expressao = Box::new(String::from("(84 - 90) * (-8 - 75 + -83 * (56 - -77) + 4 + -94)"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["84", "90", "-", "-8", "75", "-", "-83", "56", "-77", "-", "*", "+", "4", "+", "-94", "+", "*"]);
+    
+    expressao = Box::new(String::from("(54 - -8 - -35 + -68 - -90) * -39 + -43 + -91 * -30"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["54", "-8", "-", "-35", "-", "-68", "+", "-90", "-", "-39", "*", "-43", "+", "-91", "-30", "*", "+"]);
+
+    expressao = Box::new(String::from("-13 - -74 + (66 + -57) * -93 * -9 * 77 + 79 - 66 + -53"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["-13", "-74", "-", "66", "-57", "+", "-93", "*", "-9", "*", "77", "*", "+", "79", "+", "66", "-", "-53", "+",]);
+
+    expressao = Box::new(String::from("(-72 - 50 * -74 + -45) * 92 * 21 * 5 * (-13 - 66 - 18)"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["-72", "50", "-74", "*", "-", "-45", "+", "92", "*", "21", "*", "5", "*", "-13", "66", "-", "18", "-", "*"]);
+
+    expressao = Box::new(String::from("-7 - -37 * (90 + 70) - 30 - -44 + -32 - 56 - -48 - -78"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["-7", "-37", "90", "70", "+", "*", "-", "30", "-", "-44", "-", "-32", "+", "56", "-", "-48", "-", "-78", "-"]);
+
+    expressao = Box::new(String::from("65 * -83 - -3 + -20 + 24 - 85 * (-24 + -32) * (61 - 20)"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["65", "-83", "*", "-3", "-", "-20", "+", "24", "+", "85", "-24", "-32", "+", "*", "61", "20", "-", "*", "-"]);
+
+    expressao = Box::new(String::from("55 * 48 * -44 - -32 + 1 * -80 * -94 - 74 * -53 + -30 + -61"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["55", "48", "*", "-44", "*", "-32", "-", "1", "-80", "*", "-94", "*", "+", "74", "-53", "*", "-", "-30", "+", "-61", "+",]);
+
+    expressao = Box::new(String::from("-82 * (25 + 62 + 3) - -72 + -65 * -32 * (77 + 12) - -95 + 51"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["-82", "25", "62", "+", "3", "+", "*", "-72", "-", "-65", "-32", "*", "77", "12", "+", "*", "+", "-95", "-", "51", "+"]);
+
+    expressao = Box::new(String::from("(2 - 65 - (-24 + -97) * -5 * -61) * (-41 + 85 * 9 * -92 * (75 - 18))"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["2", "65", "-", "-24", "-97", "+", "-5", "*", "-61", "*", "-", "-41", "85", "9", "*", "-92", "*", "75", "18", "-", "*", "+", "*"]);
+
+    expressao = Box::new(String::from("-20 + -51 + 20 + -68 * -11 + -35 * -14 - 95 - 32 + -52 * -23 - -90 * -42"));
+    lexer_saida = Box::new(lexer(&expressao));
+    let fila_saida : Queue = shunting_yard(lexer_saida, &precedencia);
+    assert_eq!(fila_saida.elem, ["-20", "-51", "+", "20", "+", "-68", "-11", "*", "+", "-35", "-14", "*", "+", "95", "-", "32", "-", "-52", "-23", "*", "+", "-90", "-42", "*", "-"]);
 }
