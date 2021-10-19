@@ -241,7 +241,7 @@ pub fn solve(fila_saida : &Box<Queue>) -> i64{
     //Função que resolve expressões em Notação Reverse Polish
     let mut pilha_operandos : Stack = Stack::new(); //Colocaremos os operandos nessa pilha
 
-    //["1", "2", "3", "*", "+"]
+    //["4", "2", "/", "7", "+"]
     for token in &fila_saida.elem{
         //Se token for número ou operando
         if (token != "+") && (token != "-") && (token != "*") && (token != "/"){
@@ -255,20 +255,21 @@ pub fn solve(fila_saida : &Box<Queue>) -> i64{
             let resultado_operacao;
             
             match token.as_str(){
-                "+" => resultado_operacao = op1 + op2,
-                "-" => resultado_operacao = op1 - op2,
-                "*" => resultado_operacao = op1 * op2,
-                "/" => {if op2 == 0{
-                            panic!("Divisor não pode ser 0!");
-                        }
-                            resultado_operacao = op1 / op2
-                        }
-                _ => {}
+                "+" => {resultado_operacao = op2 + op1}
+                "-" => {resultado_operacao = op2 - op1}
+                "*" => {resultado_operacao = op2 * op1}
+                "/" => {
+                    if op2 == 0{
+                        panic!("Divisor não pode ser 0!");
+                    }
+                    resultado_operacao = op2 / op1
+                }
+                _ => {panic!("Operador não é válido!")},
             }
                 pilha_operandos.push(resultado_operacao.to_string());
-            }
-            
         }
+            
+        
     }
 
     resultado = pilha_operandos.pop().parse().unwrap();
@@ -285,9 +286,9 @@ fn main() {
     precedencia.insert("(".to_string(), PRECEDENCIA_MAX);
     precedencia.insert(")".to_string(), PRECEDENCIA_MAX);
 
-    let mut expressaoMath : Box<String> = Box::new(String::from("1 - 1"));
+    let mut expressaoMath : Box<String> = Box::new(String::from("4 / 2 + 7"));
     let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
-    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), 0);
+    assert_eq!(solve(&Box::new(shunting_yard(tokens, &precedencia))), 9);
 }
 
 #[test]
