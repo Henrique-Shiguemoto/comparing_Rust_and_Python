@@ -4,6 +4,7 @@
 //imports
 use std::collections::HashMap;
 use std::str;
+use std::time::{Duration, Instant};
 
 //constantes
 const PRECEDENCIA_MAX: u8 = 100;
@@ -299,10 +300,7 @@ pub fn solve(fila_saida : &Box<Queue>, expressao : &Box<Vec<String>>, mut expres
     return resultado;
 }
 
-fn main() {
-}
-
-#[test]
+//#[test]
 fn lexer_test() {
     let mut expressaoMath = Box::new(String::from("1 + 3"));
     assert_eq!(lexer(&expressaoMath), ["1", "+", "3"]);
@@ -354,7 +352,7 @@ fn lexer_test() {
     assert_eq!(lexer(&expressaoMath), ["-20", "+", "-51", "+", "20", "+", "-68", "*", "-11", "+", "-35", "*", "-14", "-", "95", "-", "32", "+", "-52", "*", "-23", "-", "-90", "*", "-42"]);
 }
 
-#[test]
+//#[test]
 fn stack_queue_test() {
     let a : Vec<String> = Vec::new(); //Vetor de Strings vazia para teste
 
@@ -416,7 +414,7 @@ fn stack_queue_test() {
     assert_eq!(fila.isEmpty(), true);
 }
 
-#[test]
+//#[test]
 fn shunting_yard_test(){
     //Definindo uma precedência de operadores
     let mut precedencia: Box<HashMap<String, u8>> = Box::new(HashMap::new());
@@ -548,7 +546,7 @@ fn shunting_yard_test(){
     assert_eq!(fila_saida.elem, ["-20", "-51", "+", "20", "+", "-68", "-11", "*", "+", "-35", "-14", "*", "+", "95", "-", "32", "-", "-52", "-23", "*", "+", "-90", "-42", "*", "-"]);
 }
 
-#[test]
+//#[test]
 fn solve_test(){
     //Definindo uma precedência de operadores
     let mut precedencia: Box<HashMap<String, u8>> = Box::new(HashMap::new());
@@ -658,4 +656,11 @@ fn solve_test(){
     expressaoMath= Box::new(String::from("-20 + -51 + 20 + -68 * -11 + -35 * -14 - 95 - 32 + -52 * -23 - -90 * -42"));
     let tokens : Box<Vec<String>> = Box::new(lexer(&expressaoMath));
     assert_eq!(solve(&Box::new(shunting_yard(&tokens, &precedencia)), &tokens, &expressaoMath), -1524);
+}
+
+fn main() {
+    lexer_test();
+    stack_queue_test();
+    shunting_yard_test();
+    solve_test();
 }
