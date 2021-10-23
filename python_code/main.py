@@ -126,6 +126,8 @@ def lexer_test():
     assert lexer(expressaoMath) == ["-29", "*", "49", "+", "47", "-", "29", "+", "74", "-", "-85", "-", "-27", "+", "4", "-", "28"]
     expressaoMath = "-74 - -14 + 42 - -4 + -78 + -50 * -35 * -81 + -41"
     assert lexer(expressaoMath) == ["-74", "-", "-14", "+", "42", "-", "-4", "+", "-78", "+", "-50", "*", "-35", "*", "-81", "+", "-41"]
+    expressaoMath = "80 * -18 * (85 * (-46 + -71) - 12 + 26 - 59) + 84"
+    assert lexer(expressaoMath) == ["80", "*", "-18", "*", "(", "85", "*", "(", "-46", "+", "-71", ")", "-", "12", "+", "26", "-", "59", ")", "+", "84"]
     expressaoMath = "25 + 38 + 88 + (-6 - -73) * (-83 + (53 + 97) * 14)"
     assert lexer(expressaoMath) == ["25", "+", "38", "+", "88", "+", "(", "-6", "-", "-73", ")", "*", "(", "-83", "+", "(", "53", "+", "97", ")", "*", "14", ")"]
     expressaoMath = "(84 - 90) * (-8 - 75 + -83 * (56 - -77) + 4 + -94)"
@@ -150,7 +152,7 @@ def lexer_test():
     assert lexer(expressaoMath) == ["-20", "+", "-51", "+", "20", "+", "-68", "*", "-11", "+", "-35", "*", "-14", "-", "95", "-", "32", "+", "-52", "*", "-23", "-", "-90", "*", "-42"]
     print("Testes de lexer concluídos!")
 
-def stack_Fila_test():
+def pilha_fila_test():
     pilha = Pilha()
     assert pilha.elem == []
     assert pilha.estaVazia() == True
@@ -323,6 +325,11 @@ def shunting_yard_test(precedencia_operadores : dict):
     fila_saida : Fila = shunting_yard(lexer_saida, precedencia_operadores)
     assert fila_saida.elem == deque(["-74", "-14", "-", "42", "+", "-4", "-", "-78", "+", "-50", "-35", "*", "-81", "*", "+", "-41", "+"])
 
+    expressao = "80 * -18 * (85 * (-46 + -71) - 12 + 26 - 59) + 84"
+    lexer_saida = lexer(expressao)
+    fila_saida : Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    assert fila_saida.elem == deque(["80", "-18", "*", "85", "-46", "-71", "+", "*", "12", "-", "26", "+", "59", "-", "*", "84", "+"])
+
     expressao = "25 + 38 + 88 + (-6 - -73) * (-83 + (53 + 97) * 14)"
     lexer_saida = lexer(expressao)
     fila_saida : Fila = shunting_yard(lexer_saida, precedencia_operadores)
@@ -379,8 +386,163 @@ def shunting_yard_test(precedencia_operadores : dict):
     assert fila_saida.elem == deque(["-20", "-51", "+", "20", "+", "-68", "-11", "*", "+", "-35", "-14", "*", "+", "95", "-", "32", "-", "-52", "-23", "*", "+", "-90", "-42", "*", "-"])
     print("Testes do Shunting Yard concluídos!")
 
-def solve(fila_saida : Fila) -> int:
+def solve_teste(precedencia_operadores : dict):
+    expressao = "1 + 3"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == 4
+
+    expressao = "1 + 2 * 3"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == 7
+
+    expressao = "4 / 2 + 7"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == 9
+
+    expressao = "1 + 2 + 3 * 4"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == 15
+
+    expressao = "(1 + 2 + 3) * 4"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == 24
+
+    expressao = "(10 / 3 + 23) * (1 - 4)"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == -78
+
+    expressao = "((1 + 3) * 8 + 1) / 3"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == 11
+
+    expressao = "58 - -8 * (58 + 31) - -14"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == 784
+
+    expressao = "-71 * (-76 * 91 * (10 - 5 - -82) - -79)"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == 42714523
+
+    expressao = "10 * 20 + 3 * 7 + 2 * 3 + 10 / 3 * 4"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == 239
+
+    expressao = "(-13 - -73) * (44 - -78 - 77 + 42 - -32)"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == 7140
+
+    expressao = "-29 * 49 + 47 - 29 + 74 - -85 - -27 + 4 - 28"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == -1241
+
+    expressao = "-74 - -14 + 42 - -4 + -78 + -50 * -35 * -81 + -41"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == -141883
+
+    expressao = "80 * -18 * (85 * (-46 + -71) - 12 + 26 - 59) + 84"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == 14385684
+
+    expressao = "25 + 38 + 88 + (-6 - -73) * (-83 + (53 + 97) * 14)"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == 135290
+
+    expressao = "(84 - 90) * (-8 - 75 + -83 * (56 - -77) + 4 + -94)"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == 67272
+
+    expressao = "(54 - -8 - -35 + -68 - -90) * -39 + -43 + -91 * -30"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == -1954
+
+    expressao = "-13 - -74 + (66 + -57) * -93 * -9 * 77 + 79 - 66 + -53"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == 580062
+
+    expressao = "(-72 - 50 * -74 + -45) * 92 * 21 * 5 * (-13 - 66 - 18)"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == -3357342660
+
+    expressao = "-7 - -37 * (90 + 70) - 30 - -44 + -32 - 56 - -48 - -78"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == 5965
+
+    expressao = "65 * -83 - -3 + -20 + 24 - 85 * (-24 + -32) * (61 - 20)"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == 189772
+
+    expressao = "55 * 48 * -44 - -32 + 1 * -80 * -94 - 74 * -53 + -30 + -61"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == -104777
+
+    expressao = "-82 * (25 + 62 + 3) - -72 + -65 * -32 * (77 + 12) - -95 + 51"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == 177958
+
+    expressao = "(2 - 65 - (-24 + -97) * -5 * -61) * (-41 + 85 * 9 * -92 * (75 - 18))"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == -147799088242
+
+    expressao = "-20 + -51 + 20 + -68 * -11 + -35 * -14 - 95 - 32 + -52 * -23 - -90 * -42"
+    lexer_saida = lexer(expressao)
+    fila_saida: Fila = shunting_yard(lexer_saida, precedencia_operadores)
+    resultado = solve(fila_saida, expressao)
+    assert resultado == -1524
+    print("Testes do Solve concluídos!")
+
+def solve(fila_saida : Fila, expressao_original : str) -> int:
     resultado : int
+
+    print()
+    print(expressao_original)
 
     #Função que resolve expressões em notação reverse polish
     pilha_operandos = Pilha()
@@ -394,6 +556,8 @@ def solve(fila_saida : Fila) -> int:
             op1 = int(pilha_operandos.remove())
             op2 = int(pilha_operandos.remove())
 
+            particao_a_resolver : str = str(op2) + " " + token + " " + str(op1)
+
             resultado_operacao : int
             if (token == "+"):
                 resultado_operacao = op2 + op1
@@ -404,7 +568,15 @@ def solve(fila_saida : Fila) -> int:
             else:
                 if op1 == 0:
                     sys.stderr.write("Divisor não pode ser 0!")
-                resultado_operacao = op2 / op1
+                resultado_operacao = int(op2 / op1)
+            
+            expressao_original = expressao_original.replace(particao_a_resolver, str(resultado_operacao))
+
+            resultado_com_parenteses = "(" + str(resultado_operacao) + ")"
+            if resultado_com_parenteses in expressao_original:
+                expressao_original = expressao_original.replace(resultado_com_parenteses, str(resultado_operacao))
+            
+            print(expressao_original)
             pilha_operandos.insere(resultado_operacao)
     
     resultado = int(pilha_operandos.remove())
@@ -420,9 +592,10 @@ def main():
         (")", PRECEDENCIA_MAX)
     ])
 
-    shunting_yard_test(precedencia_operadores)
-    stack_Fila_test()
+    pilha_fila_test()
     lexer_test()
+    shunting_yard_test(precedencia_operadores)
+    solve_teste(precedencia_operadores)
 
 if __name__ == '__main__':
     main()
